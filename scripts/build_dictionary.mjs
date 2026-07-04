@@ -467,7 +467,7 @@ export function renderHtml(dictionary) {
     border:1px solid rgba(255,255,255,.18); background:transparent; color:#8a7f70;
   }
   .chip.on{background:var(--gold); border-color:var(--gold); color:#fff;}
-  main{padding:14px 16px calc(env(safe-area-inset-bottom) + 88px); max-width:720px; margin:0 auto;}
+  main{padding:14px 16px calc(env(safe-area-inset-bottom) + 110px); max-width:720px; margin:0 auto;}
   .view{display:none;}
   .view.active{display:block;}
   .summary{color:var(--sub); font-size:12.5px; padding:2px 2px 12px; line-height:1.4;}
@@ -610,13 +610,13 @@ export function renderHtml(dictionary) {
     position:fixed; left:0; right:0; bottom:0; z-index:25;
     display:grid; grid-template-columns:repeat(3,1fr); gap:0;
     background:var(--bg); border-top:1px solid var(--border);
-    padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);
+    padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
   }
   .bottom-nav button{
     border:none; background:transparent; color:var(--sub); border-radius:8px;
-    padding:2px 0; font-size:12.5px; font-weight:700;
+    padding:10px 0; font-size:16px; font-weight:700;
   }
-  .bottom-nav button.on{color:var(--text);}
+  .bottom-nav button.on{color:var(--gold);}
   .empty{text-align:center; color:var(--sub); padding:60px 20px; font-size:15px;}
   .pagination{
     display:none; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 0;
