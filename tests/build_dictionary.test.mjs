@@ -223,7 +223,9 @@ test("renderHtml embeds JSON that can be parsed back from the data script", () =
   assert.match(html, /new Audio/);
   assert.match(html, /RECENT_KEY/);
   assert.match(html, /function openDetail/);
-  assert.match(html, /visibleLimit = 50/);
+  assert.match(html, /currentPage = 0/);
+  assert.match(html, /id="prevPage"/);
+  assert.match(html, /id="nextPage"/);
   assert.match(html, /setTimeout\(\(\)=>/);
   assert.doesNotMatch(html, /data-tab="phrase"/);
   assert.match(html, /data-tab="study"/);

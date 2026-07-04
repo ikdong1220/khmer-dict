@@ -618,10 +618,15 @@ export function renderHtml(dictionary) {
   }
   .bottom-nav button.on{color:var(--text);}
   .empty{text-align:center; color:var(--sub); padding:60px 20px; font-size:15px;}
-  #moreBtn{
-    display:none; width:100%; margin:14px 0 0; padding:13px 16px; border-radius:8px;
-    border:1px solid var(--border); background:transparent; color:var(--text); font-weight:700; font-size:15px;
+  .pagination{
+    display:none; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 0;
   }
+  .pagination button{
+    flex:0 0 auto; padding:11px 18px; border-radius:8px; border:1px solid var(--border);
+    background:transparent; color:var(--text); font-weight:700; font-size:14px;
+  }
+  .pagination button:disabled{opacity:.4;}
+  #pageIndicator{color:var(--sub); font-size:12.5px;}
   #toast{
     position:fixed; bottom:calc(env(safe-area-inset-bottom) + 24px); left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--accent); color:#f4efe5; padding:10px 22px; border-radius:24px; font-size:14px;
@@ -644,7 +649,11 @@ export function renderHtml(dictionary) {
   <section class="view active" id="dictView">
     <div class="summary" id="summary"></div>
     <div id="list"></div>
-    <button id="moreBtn">더 보기</button>
+    <div class="pagination" id="pagination">
+      <button id="prevPage">← 이전</button>
+      <span id="pageIndicator"></span>
+      <button id="nextPage">다음 →</button>
+    </div>
   </section>
   <section class="view" id="studyView"></section>
   <section class="view" id="bookView"></section>
@@ -683,7 +692,7 @@ let dailyState = JSON.parse(localStorage.getItem(DAILY_KEY)||'{"cards":{},"stats
 let books = JSON.parse(localStorage.getItem(BOOK_KEY)||'{"기본 단어장":[]}');
 let curCat = "전체";
 let activeTab = "dict";
-let visibleLimit = 50;
+let currentPage = 0;
 let currentAudio = null;
 let inputTimer;
 let studySection = "lessons";
@@ -700,7 +709,10 @@ const $list = document.getElementById("list");
 const $chips = document.getElementById("chips");
 const $recent = document.getElementById("recent");
 const $clear = document.getElementById("clearBtn");
-const $more = document.getElementById("moreBtn");
+const $pagination = document.getElementById("pagination");
+const $prevPage = document.getElementById("prevPage");
+const $nextPage = document.getElementById("nextPage");
+const $pageIndicator = document.getElementById("pageIndicator");
 const $summary = document.getElementById("summary");
 const $detail = document.getElementById("detail");
 const $detailBody = document.getElementById("detailBody");
@@ -1167,14 +1179,18 @@ function render(){
   const q = $q.value.trim();
   $clear.style.display = q ? "block" : "none";
   const items = currentItems();
-  const showing = Math.min(visibleLimit, items.length);
-  $summary.textContent = items.length.toLocaleString("ko-KR") + "개 중 " + showing.toLocaleString("ko-KR") + "개 표시";
   if(items.length===0){
+    $summary.textContent = "";
     $list.innerHTML = '<div class="empty">' + (curCat==="★ 즐겨찾기"&&!q ? "별표(☆)를 눌러 자주 쓰는 표현을 저장하세요" : "검색 결과가 없어요") + '</div>';
-    $more.style.display = "none";
+    $pagination.style.display = "none";
     return;
   }
-  const slice = items.slice(0, visibleLimit);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  if(currentPage >= totalPages) currentPage = totalPages - 1;
+  if(currentPage < 0) currentPage = 0;
+  const start = currentPage * PAGE_SIZE;
+  const slice = items.slice(start, start + PAGE_SIZE);
+  $summary.textContent = items.length.toLocaleString("ko-KR") + "개 중 " + (start + 1).toLocaleString("ko-KR") + "-" + (start + slice.length).toLocaleString("ko-KR") + "번째 표시";
   let html = "";
   if(!q && curCat==="전체"){
     let prev = "";
@@ -1186,12 +1202,15 @@ function render(){
     html = slice.map(card).join("");
   }
   $list.innerHTML = html;
-  $more.style.display = items.length > visibleLimit ? "block" : "none";
+  $pagination.style.display = totalPages > 1 ? "flex" : "none";
+  $prevPage.disabled = currentPage === 0;
+  $nextPage.disabled = currentPage >= totalPages - 1;
+  $pageIndicator.textContent = (currentPage + 1).toLocaleString("ko-KR") + " / " + totalPages.toLocaleString("ko-KR") + " 페이지";
 }
 function scheduleRender(){
   clearTimeout(inputTimer);
   inputTimer = setTimeout(()=>{
-    visibleLimit = 50;
+    currentPage = 0;
     commitRecent($q.value);
     render();
   }, 200);
@@ -1200,17 +1219,17 @@ $q.addEventListener("input", scheduleRender);
 $q.addEventListener("keydown", e=>{
   if(e.key==="Enter"){
     clearTimeout(inputTimer);
-    visibleLimit = 50;
+    currentPage = 0;
     commitRecent($q.value);
     render();
   }
 });
-$clear.addEventListener("click", ()=>{ $q.value=""; visibleLimit = 50; render(); $q.focus(); });
+$clear.addEventListener("click", ()=>{ $q.value=""; currentPage = 0; render(); $q.focus(); });
 $recent.addEventListener("click", e=>{
   const b = e.target.closest("[data-recent]");
   if(!b) return;
   $q.value = b.dataset.recent;
-  visibleLimit = 50;
+  currentPage = 0;
   commitRecent($q.value);
   render();
 });
@@ -1218,11 +1237,16 @@ $chips.addEventListener("click", e=>{
   const b = e.target.closest("[data-cat]");
   if(!b) return;
   curCat = b.dataset.cat;
-  visibleLimit = 50;
+  currentPage = 0;
   renderChips(); render();
   window.scrollTo({top:0});
 });
-$more.addEventListener("click", ()=>{ visibleLimit += PAGE_SIZE; render(); });
+$prevPage.addEventListener("click", ()=>{
+  if(currentPage > 0){ currentPage -= 1; render(); window.scrollTo({top:0}); }
+});
+$nextPage.addEventListener("click", ()=>{
+  currentPage += 1; render(); window.scrollTo({top:0});
+});
 let toastTimer;
 function toast(msg){
   const t = document.getElementById("toast");
